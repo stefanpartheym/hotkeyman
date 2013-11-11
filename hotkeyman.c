@@ -193,7 +193,7 @@ void hklog(const char* format, ...)
 	vprintf(format, arglist);
 #endif
 	// log to file
-	FILE* log_file = fopen(HK_LOG_FILENAME, "w+");
+	FILE* log_file = fopen(HK_LOG_FILENAME, "a+");
 	vfprintf(log_file, format, arglist);
 	fclose(log_file);
 	
