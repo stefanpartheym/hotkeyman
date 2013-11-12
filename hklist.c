@@ -42,15 +42,23 @@ hklist* hklist_append(hklist* head)
 void hklist_set_item(	hklist* item, int id, char* command, unsigned int mod,
 						unsigned int vk)
 {
+	hklist_set_item_command_attrib(item, command);
+	item->id	  = id;
+	item->mod	  = mod;
+	item->vk	  = vk;
+}
+
+// -----------------------------------------------------------------------------
+// set item command attribute
+// -----------------------------------------------------------------------------
+void hklist_set_item_command_attrib(hklist* item, char* command)
+{
 	// copy command string
 	char* command_str = malloc( sizeof(char) * (strlen(command) + 1) );
 	command_str[0]	  = '\0';
 	strcpy(command_str, command);
-	// set attributes
+	// set command
 	item->command = command_str;
-	item->id	  = id;
-	item->mod	  = mod;
-	item->vk	  = vk;
 }
 
 // -----------------------------------------------------------------------------

@@ -29,6 +29,8 @@ typedef struct hklist_t
 hklist* hklist_create(unsigned char ishead);
 // append item to a list
 hklist* hklist_append(hklist* head);
+// set item command attribute
+void hklist_set_item_command_attrib(hklist* item, char* command);
 // set item attributes
 void hklist_set_item(hklist* item, int id, char* command, unsigned int mod,
 					 unsigned int vk);
