@@ -10,8 +10,6 @@
  *		Unlike hklist_append(), for this function it is important to pass the
  *		'head'-item of the list to remove ALL items from memory. Otherwise, only
  *		items beginning at the right from the passed item will be removed.
- * 
- *  Author: Stefan Partheymüller
  ******************************************************************************/
 
 #ifndef HKLIST_H

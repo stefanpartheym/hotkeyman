@@ -1,7 +1,5 @@
 /*******************************************************************************
  * hotkeyman -- managing hotkeys in windows
- * 
- *  Author: Stefan Partheymüller
  ******************************************************************************/
 
 #include <windows.h>
@@ -10,7 +8,6 @@
 #include <stdbool.h>
 #include <string.h>
 #include "hotkeyman.h"
-#include "hklist.h"
 
 #define HK_ID_QUIT 1
 #define HK_ID_REFRESH 2
