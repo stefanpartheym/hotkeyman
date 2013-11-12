@@ -71,8 +71,8 @@ int main(int argc, char* argv[])
 					else
 					{
 						// run command
-						system(current_item->command);
 						hklog("running command: '%s'\n", current_item->command);
+						system(current_item->command);
 					}
 					// appropriate command found -> break
 					break;
