@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 					{
 						// refresh hotkeys
 						hklog("refreshing hotkeys ...\n");
-						refresh_hotkeys(head);
+						head = refresh_hotkeys(head);
 					}
 					else
 					{
@@ -139,7 +139,7 @@ bool unregister_hotkeys(hklist* list)
 // -----------------------------------------------------------------------------
 // refresh hotkeys
 // -----------------------------------------------------------------------------
-void refresh_hotkeys(hklist* list)
+hklist* refresh_hotkeys(hklist* list)
 {
 	unregister_hotkeys(list);
 	hklist_destroy(list);
@@ -147,6 +147,8 @@ void refresh_hotkeys(hklist* list)
 	int last_id = set_default_hotkeys(list);
 	read_hotkeys_form_file(list, HK_CONF_FILENAME, last_id);
 	register_hotkeys(list);
+	
+	return list;
 }
 
 // -----------------------------------------------------------------------------
