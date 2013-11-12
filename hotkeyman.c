@@ -14,6 +14,8 @@
 #define HK_CONF_FILENAME "hotkeyman.conf"
 #define HK_LOG_FILENAME "hotkeyman.log"
 
+#define HK_ERR_EXIT "error occurred\n-> terminating program ...\n"
+
 int main(int argc, char* argv[])
 {
 	bool quit = false;
@@ -22,6 +24,13 @@ int main(int argc, char* argv[])
 	int last_hkid = set_default_hotkeys(head);
 	// read hotkeys
 	last_hkid = read_hotkeys_form_file(head, HK_CONF_FILENAME, last_hkid);
+	// check for errors
+	if (last_hkid == -1)
+	{
+		hklist_destroy(head);
+		hklog(HK_ERR_EXIT);
+		return 1;
+	}
 	// register hotkeys
 	register_hotkeys(head);
 	
@@ -51,6 +60,13 @@ int main(int argc, char* argv[])
 						// refresh hotkeys
 						hklog("refreshing hotkeys ...\n");
 						head = refresh_hotkeys(head);
+						// check for errors
+						if (!head)
+						{
+							hklog(HK_ERR_EXIT);
+							quit = true;
+							break;
+						}
 					}
 					else
 					{
@@ -93,7 +109,7 @@ bool register_hotkeys(hklist* list)
 				hklog("successfully registered hotkey (id: %d)\n", item->id);
 			else
 			{
-				hklog("unable to register hotkey (id: %d)\n", item->id);
+				hklog("WARNING: unable to register hotkey (id: %d)\n", item->id);
 				return false;
 			}
 		}
@@ -142,7 +158,10 @@ hklist* refresh_hotkeys(hklist* list)
 	hklist_destroy(list);
 	list = hklist_create(1);
 	int last_id = set_default_hotkeys(list);
-	read_hotkeys_form_file(list, HK_CONF_FILENAME, last_id);
+	if (read_hotkeys_form_file(list, HK_CONF_FILENAME, last_id) == -1)
+		// error occurred
+		return NULL;
+	
 	register_hotkeys(list);
 	
 	return list;
@@ -155,28 +174,65 @@ hklist* refresh_hotkeys(hklist* list)
 int read_hotkeys_form_file(hklist* head, const char* file_name, int last_hkid)
 {
 	FILE* hk_file	= fopen(file_name, "r");
+	char* key		= malloc(sizeof(char) * 512);
+	char* value		= malloc(sizeof(char) * 512);
 	hklist* item	= NULL;
-	
-	while (!feof(hk_file))
+	bool new_stmt	= true;
+		
+	while (fscanf(hk_file, " %[^= ] = \"%[^\"]\" ", key, value) == 2)
 	{
-		char* cmd_buffer = malloc(sizeof(char) * 1024);
-		unsigned int mod1;
-		unsigned int mod2;
-		unsigned int mod3;
-		char key;
+		// check for new statement
+		if (new_stmt)
+		{
+			// new statement appeard -> append new hotkey-list item
+			item = hklist_append(head);
+			// current statement is active -> no new statement is expected
+			new_stmt = false;
+			last_hkid++;
+			item->id = last_hkid;
+		}
 		
-		fscanf(hk_file, "cmd=\"%[^\"]s", cmd_buffer);
-		fscanf(hk_file, "\" key=%x %x %x %c\n", &mod1, &mod2, &mod3, &key);
+		if (strcmp("cmd", key) == 0)
+			// set command
+			hklist_set_item_command_attrib(item, value);
+		else if (strcmp("keys", key) == 0)
+		{
+			unsigned int mod1 = 0;
+			unsigned int mod2 = 0;
+			unsigned int mod3 = 0;
+			char vk = -1;
+			// parse value
+			if (sscanf(value, "%x %x %x %c", &mod1, &mod2, &mod3, &key) == 4)
+			{
+				// set keys
+				item->mod = mod1 | mod2 | mod3;
+				item->vk = vk;
+			}
+			else
+			{
+				hklog(	"ERROR: value of key '%s' does not fit the specified"\
+						" format!\n");
+				return -1;
+			}
+		}
+		else
+			hklog("WARNING: the key '%s' is not specified!\n", key);
 		
-		// append new hotkey-list item
-		item = hklist_append(head);
-		last_hkid++;
-		hklist_set_item(item, last_hkid, cmd_buffer, mod1 | mod2 | mod3 , key);
-		
-		free(cmd_buffer);
+		// remember current position
+		fpos_t temp;
+		fgetpos(hk_file, &temp);
+		if (fgetc(hk_file) == ';')
+			// end of statement reached -> new statement is expected
+			new_stmt = true;
+		else
+			// restore position
+			fsetpos(hk_file, &temp);
 	}
 	
+	free(key);
+	free(value);
 	fclose(hk_file);
+	
 	return last_hkid;
 }
 
