@@ -178,8 +178,9 @@ int read_hotkeys_form_file(hklist* head, const char* file_name, int last_hkid)
 	char* value		= malloc(sizeof(char) * 512);
 	hklist* item	= NULL;
 	bool new_stmt	= true;
-		
-	while (fscanf(hk_file, " %[^= ] = \"%[^\"]\" ", key, value) == 2)
+	
+	// strip trailing and leading whitespaces ('\n' and ' ')
+	while (fscanf(hk_file, " \n %[^= ] = \"%[^\"]\" \n", key, value) == 2)
 	{
 		// check for new statement
 		if (new_stmt)
@@ -218,15 +219,14 @@ int read_hotkeys_form_file(hklist* head, const char* file_name, int last_hkid)
 		else
 			hklog("WARNING: the key '%s' is not specified!\n", key);
 		
-		// remember current position
-		fpos_t temp;
-		fgetpos(hk_file, &temp);
-		if (fgetc(hk_file) == ';')
+		// get next char
+		char c = fgetc(hk_file);
+		if (c == ';')
 			// end of statement reached -> new statement is expected
 			new_stmt = true;
 		else
-			// restore position
-			fsetpos(hk_file, &temp);
+			// restore char (end of statement not yet reached)
+			ungetc(c, hk_file);
 	}
 	
 	free(key);
