@@ -202,7 +202,7 @@ int read_hotkeys_form_file(hklist* head, const char* file_name, int last_hkid)
 			unsigned int mod3 = 0;
 			char vk = -1;
 			// parse value
-			if (sscanf(value, "%x %x %x %c", &mod1, &mod2, &mod3, &key) == 4)
+			if (sscanf(value, "%x %x %x %c", &mod1, &mod2, &mod3, &vk) == 4)
 			{
 				// set keys
 				item->mod = mod1 | mod2 | mod3;
