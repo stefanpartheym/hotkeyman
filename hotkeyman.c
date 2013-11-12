@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
 					{
 						// run command
 						system(current_item->command);
-						hklog("running command: %s\n", current_item->command);
+						hklog("running command: '%s'\n", current_item->command);
 					}
 					// appropriate command found -> break
 					break;
