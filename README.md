@@ -1,5 +1,5 @@
 # hotkeyman
-Simple tool to manage you hotkeys under windows.
+Simple tool to manage your hotkeys under windows.
 
 ## General Information
 hotkeyman -- short for "*Hotkey-Manager*"  
@@ -7,7 +7,7 @@ It uses the Windows-API function `RegisterHotKey()` to register user-defined hot
 The user is able to define his own hotkeys and their desired effect. More on that in the *Configuration*-section.
 
 ## Installation
-Simply put a link-file (*.lnk) to the hotkeyman-binary in your auto-start directory. Usually this directory is located under `C:\Users\[Your_User]\AppData\Roaming\Microsoft\Window s\Start Menu\Programs\Startup`.  
+Simply put a link-file (\*.lnk) to the hotkeyman-binary in your auto-start directory. Usually this directory is located under `C:\Users\[Your_User]\AppData\Roaming\Microsoft\Window s\Start Menu\Programs\Startup`.  
 During the next boot of windows *hotkeyman* will automatically start and manage your defined hotkeys.
 
 ## Configuration
@@ -22,8 +22,11 @@ Every hotkey-definition contains two key-value pairs.
     	- **2** stands for [CTRL]
     	- **4** stands for [SHIFT]
     	- **8** stands for [WINDOWS-KEY]
+    	- **0** means that this modifier is not used
+        	- For example: Write `keys="0 0 0 C"` defines the hotkey [C].
+            - Whereas `keys="1 2 0 C"` defines the hotkey [ALT]+[CTRL]+[C]
     	- For more information take a look at [this](http://msdn.microsoft.com/en-us/library/windows/desktop/ms646309%28v=vs.85%29.aspx).
-	- The last charakter represents the key that is pressed.
+	- The last character represents the key that is pressed.
   
 All together, the example above defines a hotkey 'C' with the modifier-keys [CTRL] and [ALT]. When the hotkey is triggered, the windows-calculator is started.  
 Note the semicolon ';' at the end of the example line. It tells the *hotkeyman* that it's the end of the current hotkey definition. This allows you to spread the hotkey-definition over various lines:  
