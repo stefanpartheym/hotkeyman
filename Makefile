@@ -13,7 +13,7 @@ LDFLAGS	:=
 default: debug
 
 # debug
-debug: CFLAGS := -D DEBUG
+debug: CFLAGS := -g -D DEBUG
 debug: build
 
 # release
