@@ -17,6 +17,7 @@ debug: CFLAGS := -g -D DEBUG
 debug: build
 
 # release
+release: LDFLAGS := -mwindows
 release: build
 
 # build executable
