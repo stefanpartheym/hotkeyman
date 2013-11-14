@@ -70,9 +70,15 @@ int main(int argc, char* argv[])
 					}
 					else
 					{
-						// run command
 						hklog("running command: '%s'\n", current_item->command);
-						system(current_item->command);
+						
+						PROCESS_INFORMATION proc_info;
+						STARTUPINFO startup_info;
+						// initialize struct with 0
+						memset(&startup_info, 0, sizeof(STARTUPINFO));
+						// run the command as new process
+						if (!CreateProcess(NULL, current_item->command, NULL, NULL, TRUE, 0, NULL, NULL, &startup_info, &proc_info))
+							hklog("ERROR: creating process failed! (code: %d)\n", GetLastError());
 					}
 					// appropriate command found -> break
 					break;
