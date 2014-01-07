@@ -131,7 +131,7 @@ bool register_hotkeys(hklist* list)
 // -----------------------------------------------------------------------------
 int set_default_hotkeys(hklist* item)
 {
-	hklist_set_item(item, HK_ID_QUIT, "", MOD_ALT | MOD_CONTROL, 'Q');
+	hklist_set_item(item, HK_ID_QUIT, "", MOD_ALT | MOD_SHIFT | MOD_CONTROL, 'Q');
 	item = hklist_append(item);
 	hklist_set_item(item, HK_ID_REFRESH, "", MOD_ALT | MOD_CONTROL, 'R');
 	
