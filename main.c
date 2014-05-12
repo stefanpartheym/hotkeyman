@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
             set_error(1, "Failed to register hotkeys!");
         else
         {
-            hotkeymanager_process_keys(hkman); // process hotkeys
+            hotkeymanager_process_hotkeys(hkman); // process hotkeys
             
             // unregister hotkeys
             if (!hotkeymanager_unregister_hotkeys(hkman))

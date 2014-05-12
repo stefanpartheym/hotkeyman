@@ -62,7 +62,7 @@ void hotkeymanager_free(HotkeyManager* hkman)
 // -----------------------------------------------------------------------------
 // Process hotkeys
 // -----------------------------------------------------------------------------
-void hotkeymanager_process_keys(HotkeyManager* hkman)
+void hotkeymanager_process_hotkeys(HotkeyManager* hkman)
 {
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0))
