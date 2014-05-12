@@ -16,6 +16,8 @@ typedef struct HotkeyManager HotkeyManager;
 HotkeyManager* hotkeymanager_create();
 void hotkeymanager_free(HotkeyManager* hkman);
 void hotkeymanager_process_hotkeys(HotkeyManager* hkman);
+bool hotkeymanager_handle_hotkey(HotkeyManager* hkman, int hotkey_id,
+                                 char* command);
 
 bool hotkeymanager_register_hotkeys(HotkeyManager* hkman);
 void hotkeymanager_append_default_hotkeys(HotkeyManager* hkman);

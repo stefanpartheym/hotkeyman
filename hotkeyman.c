@@ -78,36 +78,8 @@ void hotkeymanager_process_hotkeys(HotkeyManager* hkman)
 			{
 				if (msg.wParam == current_item->id)
 				{
-					if (current_item->id == hkman->hk_id_quit)
-					{
-						// quit hotkeyman
-						hkman->quit_flag = true;
-						hklog("Exit hotkeyman ...\n");
-					}
-					else if (current_item->id == hkman->hk_id_refresh)
-					{
-						// refresh hotkeys
-						hklog("Refreshing hotkeys ...\n");
-						if (!hotkeymanager_refresh_hotkeys(hkman))
-						{
-							hklog("ERROR: Failed to refresh hotkeys!\n");
-							hklog(HK_ERR_TERMINATE);
-							hkman->quit_flag = true;
-							break;
-						}
-					}
-					else
-					{
-						hklog("Running command: '%s'\n", current_item->command);
-						
-						PROCESS_INFORMATION proc_info;
-						STARTUPINFO startup_info;
-						// initialize struct with 0
-						memset(&startup_info, 0, sizeof(STARTUPINFO));
-						// run the command as new process
-						if (!CreateProcess(NULL, current_item->command, NULL, NULL, TRUE, 0, NULL, NULL, &startup_info, &proc_info))
-							hklog("ERROR: Creating process failed! (code: %d)\n", GetLastError());
-					}
+					hotkeymanager_handle_hotkey(hkman, current_item->id,
+                                                current_item->command);
 					// appropriate command found -> break
 					break;
 				}
@@ -119,6 +91,47 @@ void hotkeymanager_process_hotkeys(HotkeyManager* hkman)
 		if (hkman->quit_flag)
 			break;
     }
+}
+
+// -----------------------------------------------------------------------------
+// Handle hotkey
+// -----------------------------------------------------------------------------
+bool hotkeymanager_handle_hotkey(HotkeyManager* hkman, int hotkey_id,
+                                 char* command)
+{
+    if (hotkey_id == hkman->hk_id_quit)
+    {
+        // quit hotkeyman
+        hkman->quit_flag = true;
+        hklog("Exit hotkeyman ...\n");
+    }
+    else if (hotkey_id == hkman->hk_id_refresh)
+    {
+        // refresh hotkeys
+        hklog("Refreshing hotkeys ...\n");
+        if (!hotkeymanager_refresh_hotkeys(hkman))
+        {
+            hklog("ERROR: Failed to refresh hotkeys!\n");
+            hklog(HK_ERR_TERMINATE);
+            hkman->quit_flag = true;
+            return false;
+        }
+    }
+    else
+    {
+        hklog("Running command: '%s'\n", command);
+        
+        PROCESS_INFORMATION proc_info;
+        STARTUPINFO startup_info;
+        // initialize struct with 0
+        memset(&startup_info, 0, sizeof(STARTUPINFO));
+        // run the command as new process
+        if (!CreateProcess(NULL, command, NULL, NULL, TRUE, 0, NULL, NULL,
+                           &startup_info, &proc_info))
+            hklog("ERROR: Creating process failed! (code: %d)\n", GetLastError());
+    }
+    
+    return true;
 }
 
 // -----------------------------------------------------------------------------
