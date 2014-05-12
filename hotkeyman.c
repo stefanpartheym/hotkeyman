@@ -5,72 +5,100 @@
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <string.h>
 #include "hotkeyman.h"
 
-#define HK_ID_QUIT 1
-#define HK_ID_REFRESH 2
 #define HK_CONF_FILENAME "hotkeyman.conf"
-#define HK_LOG_FILENAME "hotkeyman.log"
+#define HK_LOG_FILENAME  "hotkeyman.log"
 
-#define HK_ERR_EXIT "error occurred\n-> terminating program ...\n"
 
-int main(int argc, char* argv[])
+// #############################################################################
+// Declarations
+// #############################################################################
+
+// Hotkey manager
+struct HotkeyManager
 {
-	bool quit = false;
-	// create hotkey list
-	hklist* head = hklist_create(1);
-	int last_hkid = set_default_hotkeys(head);
-	// read hotkeys
-	last_hkid = read_hotkeys_form_file(head, HK_CONF_FILENAME, last_hkid);
-	// check for errors
-	if (last_hkid == -1)
-	{
-		hklist_destroy(head);
-		hklog(HK_ERR_EXIT);
-		return 1;
-	}
-	// register hotkeys
-	register_hotkeys(head);
-	
-	// wait for hotkeys
+    hklist* hotkeys;
+    const char* config_file_name;
+    int current_id;
+    
+    bool quit_flag;
+    
+    int hk_id_quit;
+    int hk_id_refresh;
+};
+
+
+// #############################################################################
+// Interface functions
+// #############################################################################
+
+// -----------------------------------------------------------------------------
+// Constructor
+// -----------------------------------------------------------------------------
+HotkeyManager* hotkeymanager_create()
+{
+    HotkeyManager* hkman    = (HotkeyManager*) malloc(sizeof(HotkeyManager));
+    hkman->hotkeys          = hklist_create(1);
+    hkman->config_file_name = HK_CONF_FILENAME;
+    hkman->current_id       = 0;
+    hkman->quit_flag        = false;
+    hkman->hk_id_quit       = -1;
+    hkman->hk_id_refresh    = -1;
+    
+    return hkman;
+}
+
+// -----------------------------------------------------------------------------
+// Destructor
+// -----------------------------------------------------------------------------
+void hotkeymanager_free(HotkeyManager* hkman)
+{
+    hklist_destroy(hkman->hotkeys);
+    free(hkman);
+}
+
+// -----------------------------------------------------------------------------
+// Process hotkeys
+// -----------------------------------------------------------------------------
+void hotkeymanager_process_keys(HotkeyManager* hkman)
+{
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0))
     {
 		if (msg.message == WM_HOTKEY)
 		{
 			int i = 0;
-			hklist* current_item = head;
+			hklist* current_item = hkman->hotkeys;
 			
-			hklog("hotkey triggered (id: %d)\n", msg.wParam);
+			hklog("Hotkey triggered (id: %d)\n", msg.wParam);
 			// iterate over list of registered hotkeys
 			do
 			{
 				if (msg.wParam == current_item->id)
 				{
-					if (current_item->id == HK_ID_QUIT)
+					if (current_item->id == hkman->hk_id_quit)
 					{
 						// quit hotkeyman
-						quit = true;
-						hklog("exit hotkeyman ...\n");
+						hkman->quit_flag = true;
+						hklog("Exit hotkeyman ...\n");
 					}
-					else if (current_item->id == HK_ID_REFRESH)
+					else if (current_item->id == hkman->hk_id_refresh)
 					{
 						// refresh hotkeys
-						hklog("refreshing hotkeys ...\n");
-						head = refresh_hotkeys(head);
-						// check for errors
-						if (!head)
+						hklog("Refreshing hotkeys ...\n");
+						if (!hotkeymanager_refresh_hotkeys(hkman))
 						{
-							hklog(HK_ERR_EXIT);
-							quit = true;
+							hklog("ERROR: Failed to refresh hotkeys!\n");
+							hklog(HK_ERR_TERMINATE);
+							hkman->quit_flag = true;
 							break;
 						}
 					}
 					else
 					{
-						hklog("running command: '%s'\n", current_item->command);
+						hklog("Running command: '%s'\n", current_item->command);
 						
 						PROCESS_INFORMATION proc_info;
 						STARTUPINFO startup_info;
@@ -78,7 +106,7 @@ int main(int argc, char* argv[])
 						memset(&startup_info, 0, sizeof(STARTUPINFO));
 						// run the command as new process
 						if (!CreateProcess(NULL, current_item->command, NULL, NULL, TRUE, 0, NULL, NULL, &startup_info, &proc_info))
-							hklog("ERROR: creating process failed! (code: %d)\n", GetLastError());
+							hklog("ERROR: Creating process failed! (code: %d)\n", GetLastError());
 					}
 					// appropriate command found -> break
 					break;
@@ -87,24 +115,18 @@ int main(int argc, char* argv[])
 				current_item = current_item->next;
 			} while (current_item);
 		}
-		// exit hotkeyman when quit flag is true
-		if (quit)
+		// exit hotkeyman if quit flag is true
+		if (hkman->quit_flag)
 			break;
     }
-	// unregister hotkeys
-	unregister_hotkeys(head);
-	// destroy list
-	hklist_destroy(head);
-	
-	return 0;
 }
 
 // -----------------------------------------------------------------------------
-// register hotkeys
+// Register hotkeys
 // -----------------------------------------------------------------------------
-bool register_hotkeys(hklist* list)
+bool hotkeymanager_register_hotkeys(HotkeyManager* hkman)
 {
-	hklist* item = list;
+	hklist* item = hkman->hotkeys;
 	do
 	{
 		// ignore hotkeys with id = -1
@@ -112,10 +134,10 @@ bool register_hotkeys(hklist* list)
 		{
 			// register hotkey
 			if (RegisterHotKey(NULL, item->id, item->mod, item->vk))
-				hklog("successfully registered hotkey (id: %d)\n", item->id);
+				hklog("Successfully registered hotkey (id: %d)\n", item->id);
 			else
 			{
-				hklog("WARNING: unable to register hotkey (id: %d)\n", item->id);
+				hklog("WARNING: Unable to register hotkey (id: %d)\n", item->id);
 				return false;
 			}
 		}
@@ -127,28 +149,32 @@ bool register_hotkeys(hklist* list)
 }
 
 // -----------------------------------------------------------------------------
-// set default hotkeys
+// Set default hotkeys
 // -----------------------------------------------------------------------------
-int set_default_hotkeys(hklist* item)
+void hotkeymanager_append_default_hotkeys(HotkeyManager* hkman)
 {
-	hklist_set_item(item, HK_ID_QUIT, "", MOD_ALT | MOD_SHIFT | MOD_CONTROL, 'Q');
-	item = hklist_append(item);
-	hklist_set_item(item, HK_ID_REFRESH, "", MOD_ALT | MOD_CONTROL, 'R');
-	
-	return HK_ID_REFRESH;
+    int new_id   = hkman->current_id++;
+    hklist* item = hklist_append(hkman->hotkeys);
+	hklist_set_item(item, new_id, "", MOD_ALT | MOD_SHIFT | MOD_CONTROL, 'Q');
+    hkman->hk_id_quit = new_id;
+    
+    new_id = hkman->current_id++;
+	item   = hklist_append(item);
+	hklist_set_item(item, new_id, "", MOD_ALT | MOD_CONTROL, 'R');
+    hkman->hk_id_refresh = new_id;
 }
 
 // -----------------------------------------------------------------------------
-// unregister hotkeys
+// Unregister hotkeys
 // -----------------------------------------------------------------------------
-bool unregister_hotkeys(hklist* list)
+bool hotkeymanager_unregister_hotkeys(HotkeyManager* hkman)
 {
-	hklist* item = list;
+	hklist* item = hkman->hotkeys;
 	do
 	{
-		if (!UnregisterHotKey(NULL, item->id))
+		if (!item->ishead && !UnregisterHotKey(NULL, item->id))
 			return false;
-		// get next item
+        // get next item
 		item = item->next;
 	} while (item);
 	
@@ -156,33 +182,41 @@ bool unregister_hotkeys(hklist* list)
 }
 
 // -----------------------------------------------------------------------------
-// refresh hotkeys
+// Refresh hotkeys
 // -----------------------------------------------------------------------------
-hklist* refresh_hotkeys(hklist* list)
+bool hotkeymanager_refresh_hotkeys(HotkeyManager* hkman)
 {
-	unregister_hotkeys(list);
-	hklist_destroy(list);
-	list = hklist_create(1);
-	int last_id = set_default_hotkeys(list);
-	if (read_hotkeys_form_file(list, HK_CONF_FILENAME, last_id) == -1)
-		// error occurred
-		return NULL;
-	
-	register_hotkeys(list);
-	
-	return list;
+	if (!hotkeymanager_unregister_hotkeys(hkman))
+    {
+        hklog("ERROR: Failed to unregister hotkeys!\n");
+        return false;
+    }
+    
+    hklist_destroy(hkman->hotkeys);
+    hkman->hotkeys       = hklist_create(1);
+    hkman->current_id    = 0;
+    hkman->hk_id_quit    = -1;
+    hkman->hk_id_refresh = -1;
+    
+	hotkeymanager_append_default_hotkeys(hkman);
+    
+    if (hotkeymanager_read_hotkeys_form_file(hkman) &&
+        hotkeymanager_register_hotkeys(hkman))
+        return true;
+    else
+        return false;
 }
 
 // -----------------------------------------------------------------------------
-// read hotkeys from hotkeyman configuration file.
-// default: hotkeyman.conf
+// Read hotkeys from hotkeyman configuration file.
+// Default: hotkeyman.conf
 // -----------------------------------------------------------------------------
-int read_hotkeys_form_file(hklist* head, const char* file_name, int last_hkid)
+bool hotkeymanager_read_hotkeys_form_file(HotkeyManager* hkman)
 {
-	FILE* hk_file	= fopen(file_name, "r");
+	FILE* hk_file	= fopen(hkman->config_file_name, "r");
 	char* key		= malloc(sizeof(char) * 512);
 	char* value		= malloc(sizeof(char) * 512);
-	hklist* item	= NULL;
+	hklist* item	= hkman->hotkeys;
 	bool new_stmt	= true;
 	
 	// strip trailing and leading whitespaces ('\n' and ' ')
@@ -192,11 +226,11 @@ int read_hotkeys_form_file(hklist* head, const char* file_name, int last_hkid)
 		if (new_stmt)
 		{
 			// new statement appeard -> append new hotkey-list item
-			item = hklist_append(head);
+			item = hklist_append(item);
 			// current statement is active -> no new statement is expected
 			new_stmt = false;
-			last_hkid++;
-			item->id = last_hkid;
+			hkman->current_id++;
+			item->id = hkman->current_id;
 		}
 		
 		if (strcmp("cmd", key) == 0)
@@ -217,13 +251,13 @@ int read_hotkeys_form_file(hklist* head, const char* file_name, int last_hkid)
 			}
 			else
 			{
-				hklog(	"ERROR: value of key '%s' does not fit the specified"\
-						" format!\n");
-				return -1;
+				hklog("ERROR: Value of key '%s' does not fit the specified"\
+				      " format!\n");
+				return false;
 			}
 		}
 		else
-			hklog("WARNING: the key '%s' is not specified!\n", key);
+			hklog("WARNING: The key '%s' is not specified!\n", key);
 		
 		// get next char
 		char c = fgetc(hk_file);
@@ -238,8 +272,8 @@ int read_hotkeys_form_file(hklist* head, const char* file_name, int last_hkid)
 	free(key);
 	free(value);
 	fclose(hk_file);
-	
-	return last_hkid;
+    
+    return true;
 }
 
 // -----------------------------------------------------------------------------
