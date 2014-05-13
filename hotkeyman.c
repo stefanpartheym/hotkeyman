@@ -67,29 +67,29 @@ void hotkeymanager_process_hotkeys(HotkeyManager* hkman)
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0))
     {
-		if (msg.message == WM_HOTKEY)
-		{
-			int i = 0;
-			hklist* current_item = hkman->hotkeys;
-			
-			hklog("Hotkey triggered (id: %d)\n", msg.wParam);
-			// iterate over list of registered hotkeys
-			do
-			{
-				if (msg.wParam == current_item->id)
-				{
-					hotkeymanager_handle_hotkey(hkman, current_item->id,
+        if (msg.message == WM_HOTKEY)
+        {
+            int i = 0;
+            hklist* current_item = hkman->hotkeys;
+            
+            hklog("Hotkey triggered (id: %d)\n", msg.wParam);
+            // iterate over list of registered hotkeys
+            do
+            {
+                if (msg.wParam == current_item->id)
+                {
+                    hotkeymanager_handle_hotkey(hkman, current_item->id,
                                                 current_item->command);
-					// appropriate command found -> break
-					break;
-				}
-				// get next item
-				current_item = current_item->next;
-			} while (current_item);
-		}
-		// exit hotkeyman if quit flag is true
-		if (hkman->quit_flag)
-			break;
+                    // appropriate command found -> break
+                    break;
+                }
+                // get next item
+                current_item = current_item->next;
+            } while (current_item);
+        }
+        // exit hotkeyman if quit flag is true
+        if (hkman->quit_flag)
+            break;
     }
 }
 
@@ -139,26 +139,26 @@ bool hotkeymanager_handle_hotkey(HotkeyManager* hkman, int hotkey_id,
 // -----------------------------------------------------------------------------
 bool hotkeymanager_register_hotkeys(HotkeyManager* hkman)
 {
-	hklist* item = hkman->hotkeys;
-	do
-	{
-		// ignore hotkeys with id = -1
-		if (item->id != -1)
-		{
-			// register hotkey
-			if (RegisterHotKey(NULL, item->id, item->mod, item->vk))
-				hklog("Successfully registered hotkey (id: %d)\n", item->id);
-			else
-			{
-				hklog("WARNING: Unable to register hotkey (id: %d)\n", item->id);
-				return false;
-			}
-		}
-		// get next item
-		item = item->next;
-	} while (item);
-	
-	return true;
+    hklist* item = hkman->hotkeys;
+    do
+    {
+        // ignore hotkeys with id = -1
+        if (item->id != -1)
+        {
+            // register hotkey
+            if (RegisterHotKey(NULL, item->id, item->mod, item->vk))
+                hklog("Successfully registered hotkey (id: %d)\n", item->id);
+            else
+            {
+                hklog("WARNING: Unable to register hotkey (id: %d)\n", item->id);
+                return false;
+            }
+        }
+        // get next item
+        item = item->next;
+    } while (item);
+    
+    return true;
 }
 
 // -----------------------------------------------------------------------------
@@ -168,12 +168,12 @@ void hotkeymanager_append_default_hotkeys(HotkeyManager* hkman)
 {
     int new_id   = hkman->current_id++;
     hklist* item = hklist_append(hkman->hotkeys);
-	hklist_set_item(item, new_id, "", MOD_ALT | MOD_SHIFT | MOD_CONTROL, 'Q');
+    hklist_set_item(item, new_id, "", MOD_ALT | MOD_SHIFT | MOD_CONTROL, 'Q');
     hkman->hk_id_quit = new_id;
     
     new_id = hkman->current_id++;
-	item   = hklist_append(item);
-	hklist_set_item(item, new_id, "", MOD_ALT | MOD_CONTROL, 'R');
+    item   = hklist_append(item);
+    hklist_set_item(item, new_id, "", MOD_ALT | MOD_CONTROL, 'R');
     hkman->hk_id_refresh = new_id;
 }
 
@@ -182,16 +182,16 @@ void hotkeymanager_append_default_hotkeys(HotkeyManager* hkman)
 // -----------------------------------------------------------------------------
 bool hotkeymanager_unregister_hotkeys(HotkeyManager* hkman)
 {
-	hklist* item = hkman->hotkeys;
-	do
-	{
-		if (!item->ishead && !UnregisterHotKey(NULL, item->id))
-			return false;
+    hklist* item = hkman->hotkeys;
+    do
+    {
+        if (!item->ishead && !UnregisterHotKey(NULL, item->id))
+            return false;
         // get next item
-		item = item->next;
-	} while (item);
-	
-	return true;
+        item = item->next;
+    } while (item);
+    
+    return true;
 }
 
 // -----------------------------------------------------------------------------
@@ -199,7 +199,7 @@ bool hotkeymanager_unregister_hotkeys(HotkeyManager* hkman)
 // -----------------------------------------------------------------------------
 bool hotkeymanager_refresh_hotkeys(HotkeyManager* hkman)
 {
-	if (!hotkeymanager_unregister_hotkeys(hkman))
+    if (!hotkeymanager_unregister_hotkeys(hkman))
     {
         hklog("ERROR: Failed to unregister hotkeys!\n");
         return false;
@@ -211,7 +211,7 @@ bool hotkeymanager_refresh_hotkeys(HotkeyManager* hkman)
     hkman->hk_id_quit    = -1;
     hkman->hk_id_refresh = -1;
     
-	hotkeymanager_append_default_hotkeys(hkman);
+    hotkeymanager_append_default_hotkeys(hkman);
     
     if (hotkeymanager_read_hotkeys_form_file(hkman) &&
         hotkeymanager_register_hotkeys(hkman))
@@ -226,65 +226,65 @@ bool hotkeymanager_refresh_hotkeys(HotkeyManager* hkman)
 // -----------------------------------------------------------------------------
 bool hotkeymanager_read_hotkeys_form_file(HotkeyManager* hkman)
 {
-	FILE* hk_file	= fopen(hkman->config_file_name, "r");
-	char* key		= malloc(sizeof(char) * 512);
-	char* value		= malloc(sizeof(char) * 512);
-	hklist* item	= hkman->hotkeys;
-	bool new_stmt	= true;
-	
-	// strip trailing and leading whitespaces ('\n' and ' ')
-	while (fscanf(hk_file, " \n %[^= ] = \"%[^\"]\" \n", key, value) == 2)
-	{
-		// check for new statement
-		if (new_stmt)
-		{
-			// new statement appeard -> append new hotkey-list item
-			item = hklist_append(item);
-			// current statement is active -> no new statement is expected
-			new_stmt = false;
-			hkman->current_id++;
-			item->id = hkman->current_id;
-		}
-		
-		if (strcmp("cmd", key) == 0)
-			// set command
-			hklist_set_item_command_attrib(item, value);
-		else if (strcmp("keys", key) == 0)
-		{
-			unsigned int mod1 = 0;
-			unsigned int mod2 = 0;
-			unsigned int mod3 = 0;
-			char vk = -1;
-			// parse value
-			if (sscanf(value, "%x %x %x %c", &mod1, &mod2, &mod3, &vk) == 4)
-			{
-				// set keys
-				item->mod = mod1 | mod2 | mod3;
-				item->vk = vk;
-			}
-			else
-			{
-				hklog("ERROR: Value of key '%s' does not fit the specified"\
-				      " format!\n");
-				return false;
-			}
-		}
-		else
-			hklog("WARNING: The key '%s' is not specified!\n", key);
-		
-		// get next char
-		char c = fgetc(hk_file);
-		if (c == ';')
-			// end of statement reached -> new statement is expected
-			new_stmt = true;
-		else
-			// restore char (end of statement not yet reached)
-			ungetc(c, hk_file);
-	}
-	
-	free(key);
-	free(value);
-	fclose(hk_file);
+    FILE* hk_file = fopen(hkman->config_file_name, "r");
+    char* key     = malloc(sizeof(char) * 512);
+    char* value   = malloc(sizeof(char) * 512);
+    hklist* item  = hkman->hotkeys;
+    bool new_stmt = true;
+    
+    // strip trailing and leading whitespaces ('\n' and ' ')
+    while (fscanf(hk_file, " \n %[^= ] = \"%[^\"]\" \n", key, value) == 2)
+    {
+        // check for new statement
+        if (new_stmt)
+        {
+            // new statement appeard -> append new hotkey-list item
+            item = hklist_append(item);
+            // current statement is active -> no new statement is expected
+            new_stmt = false;
+            hkman->current_id++;
+            item->id = hkman->current_id;
+        }
+        
+        if (strcmp("cmd", key) == 0)
+            // set command
+            hklist_set_item_command_attrib(item, value);
+        else if (strcmp("keys", key) == 0)
+        {
+            unsigned int mod1 = 0;
+            unsigned int mod2 = 0;
+            unsigned int mod3 = 0;
+            char vk = -1;
+            // parse value
+            if (sscanf(value, "%x %x %x %c", &mod1, &mod2, &mod3, &vk) == 4)
+            {
+                // set keys
+                item->mod = mod1 | mod2 | mod3;
+                item->vk  = vk;
+            }
+            else
+            {
+                hklog("ERROR: Value of key '%s' does not fit the specified"\
+                      " format!\n");
+                return false;
+            }
+        }
+        else
+            hklog("WARNING: The key '%s' is not specified!\n", key);
+        
+        // get next char
+        char c = fgetc(hk_file);
+        if (c == ';')
+            // end of statement reached -> new statement is expected
+            new_stmt = true;
+        else
+            // restore char (end of statement not yet reached)
+            ungetc(c, hk_file);
+    }
+    
+    free(key);
+    free(value);
+    fclose(hk_file);
     
     return true;
 }
@@ -294,16 +294,16 @@ bool hotkeymanager_read_hotkeys_form_file(HotkeyManager* hkman)
 // -----------------------------------------------------------------------------
 void hklog(const char* format, ...)
 {
-	va_list arglist;
-	va_start(arglist, format);
+    va_list arglist;
+    va_start(arglist, format);
 #ifdef DEBUG
-	// actual print
-	vprintf(format, arglist);
+    // actual print
+    vprintf(format, arglist);
 #endif
-	// log to file
-	FILE* log_file = fopen(HK_LOG_FILENAME, "a+");
-	vfprintf(log_file, format, arglist);
-	fclose(log_file);
-	
-	va_end(arglist);
+    // log to file
+    FILE* log_file = fopen(HK_LOG_FILENAME, "a+");
+    vfprintf(log_file, format, arglist);
+    fclose(log_file);
+    
+    va_end(arglist);
 }

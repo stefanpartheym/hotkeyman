@@ -2,14 +2,14 @@
 # hotkeyman -- makefile
 # ##############################################################################
 
-TARGET	:= hotkeyman
-EXT		:= exe
-SRC		:= main.c hotkeyman.c hklist.c
-OBJ		:= $(SRC:%.c=%.o)
-CFLAGS	:= 
-LDFLAGS	:= 
+TARGET  := hotkeyman
+EXT     := exe
+SRC     := main.c hotkeyman.c hklist.c
+OBJ     := $(SRC:%.c=%.o)
+CFLAGS  := 
+LDFLAGS := 
 
-RM		:= rm -f
+RM      := rm -f
 
 # default target is debug
 default: debug

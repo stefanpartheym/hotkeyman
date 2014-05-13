@@ -11,15 +11,15 @@
 // -----------------------------------------------------------------------------
 hklist* hklist_create(unsigned char ishead)
 {
-	hklist* item	= malloc(sizeof(hklist));
-	item->ishead	= ishead;
-	item->next		= NULL;
-	item->id		= -1;
-	item->command	= NULL;
-	item->mod		= 0;
-	item->vk		= 0;
-	
-	return item;
+    hklist* item  = malloc(sizeof(hklist));
+    item->ishead  = ishead;
+    item->next    = NULL;
+    item->id      = -1;
+    item->command = NULL;
+    item->mod     = 0;
+    item->vk      = 0;
+    
+    return item;
 }
 
 // -----------------------------------------------------------------------------
@@ -27,25 +27,25 @@ hklist* hklist_create(unsigned char ishead)
 // -----------------------------------------------------------------------------
 hklist* hklist_append(hklist* head)
 {
-	hklist* current_item = head;
-	// get the last item in the list
-	while (current_item->next)
-		current_item = current_item->next;
-	
-	current_item->next = hklist_create(0);
-	return current_item->next;
+    hklist* current_item = head;
+    // get the last item in the list
+    while (current_item->next)
+        current_item = current_item->next;
+    
+    current_item->next = hklist_create(0);
+    return current_item->next;
 }
 
 // -----------------------------------------------------------------------------
 // set item attributes
 // -----------------------------------------------------------------------------
-void hklist_set_item(	hklist* item, int id, char* command, unsigned int mod,
-						unsigned int vk)
+void hklist_set_item(hklist* item, int id, char* command, unsigned int mod,
+                     unsigned int vk)
 {
-	hklist_set_item_command_attrib(item, command);
-	item->id	  = id;
-	item->mod	  = mod;
-	item->vk	  = vk;
+    hklist_set_item_command_attrib(item, command);
+    item->id  = id;
+    item->mod = mod;
+    item->vk  = vk;
 }
 
 // -----------------------------------------------------------------------------
@@ -53,12 +53,12 @@ void hklist_set_item(	hklist* item, int id, char* command, unsigned int mod,
 // -----------------------------------------------------------------------------
 void hklist_set_item_command_attrib(hklist* item, char* command)
 {
-	// copy command string
-	char* command_str = malloc( sizeof(char) * (strlen(command) + 1) );
-	command_str[0]	  = '\0';
-	strcpy(command_str, command);
-	// set command
-	item->command = command_str;
+    // copy command string
+    char* command_str = malloc(sizeof(char) * (strlen(command) + 1));
+    command_str[0]    = '\0';
+    strcpy(command_str, command);
+    // set command
+    item->command = command_str;
 }
 
 // -----------------------------------------------------------------------------
@@ -66,12 +66,12 @@ void hklist_set_item_command_attrib(hklist* item, char* command)
 // -----------------------------------------------------------------------------
 hklist* hklist_remove_next_item(hklist* parent)
 {
-	hklist* temp = parent->next;
-	parent->next = parent->next->next;
-	if (temp->command != NULL)
-		free(temp->command);
-	free(temp);
-	return parent;
+    hklist* temp = parent->next;
+    parent->next = parent->next->next;
+    if (temp->command != NULL)
+        free(temp->command);
+    free(temp);
+    return parent;
 }
 
 // -----------------------------------------------------------------------------
@@ -79,11 +79,11 @@ hklist* hklist_remove_next_item(hklist* parent)
 // -----------------------------------------------------------------------------
 void hklist_destroy(hklist* head)
 {
-	// free all items
-	while (head->next != NULL)
-		hklist_remove_next_item(head);
-	// free head item
-	if (head->command != NULL)
-		free(head->command);
-	free(head);
+    // free all items
+    while (head->next != NULL)
+        hklist_remove_next_item(head);
+    // free head item
+    if (head->command != NULL)
+        free(head->command);
+    free(head);
 }
