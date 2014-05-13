@@ -9,6 +9,8 @@ OBJ		:= $(SRC:%.c=%.o)
 CFLAGS	:= 
 LDFLAGS	:= 
 
+RM		:= rm -f
+
 # default target is debug
 default: debug
 
@@ -29,6 +31,6 @@ build: $(OBJ)
 	$(CC) $(CFLAGS) -c $<
 
 clean:
-	rm $(TARGET).$(EXT) $(OBJ)
+	$(RM) $(TARGET).$(EXT) $(OBJ)
 
 .PHONY: clean
