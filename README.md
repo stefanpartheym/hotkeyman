@@ -49,7 +49,10 @@ Use the existing *Makefile* to build the *hotkeyman*-binary. Type
 `make release` to build a release-version.
 ### GNU/Linux
 In order to build *hotkeyman* you need to download *xhklib* from [github.com/jwmcode/xhklib](https://github.com/jwmcode/xhklib).  
-The referenced repository contains two files that you have to put into the root directory of *hotkeyman*.  
+The referenced repository contains two files that you have to put into the root directory of *hotkeyman*:  
+- xhklib.h
+- xhklib.c
+
 Once you have copied the files into the *hotkeyman* directory you should be able to build *hotkeyman*.
 ### Differences between build targets under Windows
 - The debug-build will show a console-window and various debug-messages during the run-time of *hotkeyman*.
