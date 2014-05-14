@@ -1,3 +1,7 @@
+/*******************************************************************************
+ * hotkeyman -- Managing hotkeys in X11 and Windows
+ ******************************************************************************/
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include "hotkeyman.h"
