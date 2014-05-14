@@ -4,7 +4,7 @@
 
 TARGET  := hotkeyman
 EXT     := 
-SRC     := main.c hotkeyman.c hklist.c
+SRC     := main.c hotkeyman.c hkutils.c hklist.c
 OBJ      = $(SRC:%.c=%.o)
 CFLAGS  := 
 LDFLAGS := 

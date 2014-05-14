@@ -10,12 +10,11 @@
 #endif // _PLAT_WNDS
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <string.h>
 #include "hotkeyman.h"
+#include "hkutils.h"
 
 #define HK_CONF_FILENAME "hotkeyman.conf"
-#define HK_LOG_FILENAME  "hotkeyman.log"
 
 
 // #############################################################################
@@ -38,6 +37,11 @@ struct HotkeyManager
     int hk_id_quit;
     int hk_id_refresh;
 };
+
+#ifndef _PLAT_WNDS
+void hotkeymanager_handle_hotkey_cb(xhkEvent event, void* arg1, void* arg2,
+                                    void* arg3);
+#endif // _PLAT_WNDS
 
 
 // #############################################################################
@@ -171,20 +175,6 @@ bool hotkeymanager_handle_hotkey(HotkeyManager* hkman, int hotkey_id,
     
     return true;
 }
-
-#ifndef _PLAT_WNDS
-// -----------------------------------------------------------------------------
-// Callback: Handle keypress in X11
-// -----------------------------------------------------------------------------
-void hotkeymanager_handle_hotkey_cb(xhkEvent event, void* arg1, void* arg2,
-                                    void* arg3)
-{
-    HotkeyManager* hkman = (HotkeyManager*) arg1;
-    int id               = (int) arg2;
-    
-    hotkeymanager_process_hotkeys_internal(hkman, id);
-}
-#endif // not _PLAT_WNDS
 
 // -----------------------------------------------------------------------------
 // Register hotkeys
@@ -354,52 +344,21 @@ bool hotkeymanager_read_hotkeys_form_file(HotkeyManager* hkman)
     return true;
 }
 
-// -----------------------------------------------------------------------------
-// write log message
-// -----------------------------------------------------------------------------
-void hklog(const char* format, ...)
-{
-    va_list arglist;
-    va_start(arglist, format);
-#ifdef DEBUG
-    // actual print
-    vprintf(format, arglist);
-#endif
-    // log to file
-    FILE* log_file = fopen(HK_LOG_FILENAME, "a+");
-    vfprintf(log_file, format, arglist);
-    fclose(log_file);
-    
-    va_end(arglist);
-}
 
+// #############################################################################
+// Internal functions
+// #############################################################################
+
+#ifndef _PLAT_WNDS
 // -----------------------------------------------------------------------------
-// Convert windows modifier keys to X11 keys
+// Callback: Handle keypress in X11
 // -----------------------------------------------------------------------------
-unsigned int hkconvert(unsigned int modifiers)
+void hotkeymanager_handle_hotkey_cb(xhkEvent event, void* arg1, void* arg2,
+                                    void* arg3)
 {
-    unsigned int result = 0;
+    HotkeyManager* hkman = (HotkeyManager*) arg1;
+    int id               = (int) arg2;
     
-    if (modifiers & MOD_ALT)
-    {
-        result    |= Mod1Mask;
-        modifiers &= ~MOD_ALT;
-    }
-    if (modifiers & MOD_CONTROL)
-    {
-        result    |= ControlMask;
-        modifiers &= ~MOD_CONTROL;
-    }
-    if (modifiers & MOD_SHIFT)
-    {
-        result    |= ShiftMask;
-        modifiers &= ~MOD_SHIFT;
-    }
-    if (modifiers & MOD_WIN)
-    {
-        result    |= Mod4Mask;
-        modifiers &= ~MOD_WIN;
-    }
-    
-    return result;
+    hotkeymanager_process_hotkeys_internal(hkman, id);
 }
+#endif // not _PLAT_WNDS
