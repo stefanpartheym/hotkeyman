@@ -26,5 +26,6 @@ bool hotkeymanager_refresh_hotkeys(HotkeyManager* hkman);
 bool hotkeymanager_read_hotkeys_form_file(HotkeyManager* hkman);
 
 void hklog(const char* format, ...);
+unsigned int hkconvert(unsigned int modifiers);
 
 #endif // HOTKEYMAN_H

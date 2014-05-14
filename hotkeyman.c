@@ -2,9 +2,15 @@
  * hotkeyman -- managing hotkeys in windows
  ******************************************************************************/
 
+#ifdef _PLAT_WNDS
 #include <windows.h>
+#else
+#include "xhklib.h"
+#include "wnds_keydefs.h"
+#endif // _PLAT_WNDS
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include "hotkeyman.h"
 
@@ -22,6 +28,10 @@ struct HotkeyManager
     hklist* hotkeys;
     const char* config_file_name;
     int current_id;
+    
+#ifndef _PLAT_WNDS
+    xhkConfig* hkconfig;
+#endif // not _PLAT_WNDS
     
     bool quit_flag;
     
@@ -43,6 +53,9 @@ HotkeyManager* hotkeymanager_create()
     hkman->hotkeys          = hklist_create(1);
     hkman->config_file_name = HK_CONF_FILENAME;
     hkman->current_id       = 0;
+#ifndef _PLAT_WNDS
+    hkman->hkconfig         = xhkInit(NULL);
+#endif // not _PLAT_WNDS
     hkman->quit_flag        = false;
     hkman->hk_id_quit       = -1;
     hkman->hk_id_refresh    = -1;
@@ -55,6 +68,9 @@ HotkeyManager* hotkeymanager_create()
 // -----------------------------------------------------------------------------
 void hotkeymanager_free(HotkeyManager* hkman)
 {
+#ifndef _PLAT_WNDS
+    xhkClose(hkman->hkconfig);
+#endif // not _PLAT_WNDS
     hklist_destroy(hkman->hotkeys);
     free(hkman);
 }
@@ -62,35 +78,51 @@ void hotkeymanager_free(HotkeyManager* hkman)
 // -----------------------------------------------------------------------------
 // Process hotkeys
 // -----------------------------------------------------------------------------
+void hotkeymanager_process_hotkeys_internal(HotkeyManager* hkman, int hotkey_id)
+{
+    int i = 0;
+    hklist* current_item = hkman->hotkeys;
+    
+    hklog("Hotkey triggered (id: %d)\n", hotkey_id);
+    // iterate over list of registered hotkeys
+    do
+    {
+        if (hotkey_id == current_item->id)
+        {
+            hotkeymanager_handle_hotkey(hkman, current_item->id,
+                                        current_item->command);
+            // appropriate command found -> break
+            break;
+        }
+        // get next item
+        current_item = current_item->next;
+    } while (current_item);
+}
+
+// -----------------------------------------------------------------------------
+// Process hotkeys
+// -----------------------------------------------------------------------------
 void hotkeymanager_process_hotkeys(HotkeyManager* hkman)
 {
+#ifdef _PLAT_WNDS
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0))
     {
         if (msg.message == WM_HOTKEY)
-        {
-            int i = 0;
-            hklist* current_item = hkman->hotkeys;
-            
-            hklog("Hotkey triggered (id: %d)\n", msg.wParam);
-            // iterate over list of registered hotkeys
-            do
-            {
-                if (msg.wParam == current_item->id)
-                {
-                    hotkeymanager_handle_hotkey(hkman, current_item->id,
-                                                current_item->command);
-                    // appropriate command found -> break
-                    break;
-                }
-                // get next item
-                current_item = current_item->next;
-            } while (current_item);
-        }
+            hotkeymanager_process_hotkeys_internal(hkman, msg.WParam);
+        
         // exit hotkeyman if quit flag is true
         if (hkman->quit_flag)
             break;
     }
+#else
+    while (true)
+    {
+        xhkPollKeys(hkman->hkconfig, 1);
+        if (hkman->quit_flag)
+            break;
+    }
+#endif // _PLAT_WNDS
 }
 
 // -----------------------------------------------------------------------------
@@ -121,18 +153,38 @@ bool hotkeymanager_handle_hotkey(HotkeyManager* hkman, int hotkey_id,
     {
         hklog("Running command: '%s'\n", command);
         
+#ifdef _PLAT_WNDS
         PROCESS_INFORMATION proc_info;
         STARTUPINFO startup_info;
         // initialize struct with 0
         memset(&startup_info, 0, sizeof(STARTUPINFO));
-        // run the command as new process
+        // run command as new process
         if (!CreateProcess(NULL, command, NULL, NULL, TRUE, 0, NULL, NULL,
                            &startup_info, &proc_info))
             hklog("ERROR: Creating process failed! (code: %d)\n", GetLastError());
+#else
+        int exit_code = system(command);
+        if (exit_code != 0)
+            hklog("ERROR: Creating process failed! (code: %d)\n", exit_code);
+#endif // _PLAT_WNDS
     }
     
     return true;
 }
+
+#ifndef _PLAT_WNDS
+// -----------------------------------------------------------------------------
+// Callback: Handle keypress in X11
+// -----------------------------------------------------------------------------
+void hotkeymanager_handle_hotkey_cb(xhkEvent event, void* arg1, void* arg2,
+                                    void* arg3)
+{
+    HotkeyManager* hkman = (HotkeyManager*) arg1;
+    int id               = (int) arg2;
+    
+    hotkeymanager_process_hotkeys_internal(hkman, id);
+}
+#endif // not _PLAT_WNDS
 
 // -----------------------------------------------------------------------------
 // Register hotkeys
@@ -146,7 +198,13 @@ bool hotkeymanager_register_hotkeys(HotkeyManager* hkman)
         if (item->id != -1)
         {
             // register hotkey
+#ifdef _PLAT_WNDS
             if (RegisterHotKey(NULL, item->id, item->mod, item->vk))
+#else
+            if (xhkBindKey(hkman->hkconfig, 0, item->vk, hkconvert(item->mod),
+                           xhkKeyPress, &hotkeymanager_handle_hotkey_cb, hkman,
+                           (void*) item->id, 0) == 0)
+#endif // _PLAT_WNDS
                 hklog("Successfully registered hotkey (id: %d)\n", item->id);
             else
             {
@@ -182,14 +240,21 @@ void hotkeymanager_append_default_hotkeys(HotkeyManager* hkman)
 // -----------------------------------------------------------------------------
 bool hotkeymanager_unregister_hotkeys(HotkeyManager* hkman)
 {
-    hklist* item = hkman->hotkeys;
-    do
+    hklist* item = hkman->hotkeys->next; // get first item
+    while (item)
     {
-        if (!item->ishead && !UnregisterHotKey(NULL, item->id))
+#ifdef _PLAT_WNDS
+        if (!UnregisterHotKey(NULL, item->id))
+#else
+        if (xhkUnBindKey(hkman->hkconfig, 0, item->vk, hkconvert(item->mod),
+                         xhkKeyPress) == -1)
+#endif // _PLAT_WNDS
             return false;
+        else
+            hklog("Successfully unregistered hotkey (id: %d)\n", item->id);
         // get next item
         item = item->next;
-    } while (item);
+    }
     
     return true;
 }
@@ -306,4 +371,35 @@ void hklog(const char* format, ...)
     fclose(log_file);
     
     va_end(arglist);
+}
+
+// -----------------------------------------------------------------------------
+// Convert windows modifier keys to X11 keys
+// -----------------------------------------------------------------------------
+unsigned int hkconvert(unsigned int modifiers)
+{
+    unsigned int result = 0;
+    
+    if (modifiers & MOD_ALT)
+    {
+        result    |= Mod1Mask;
+        modifiers &= ~MOD_ALT;
+    }
+    if (modifiers & MOD_CONTROL)
+    {
+        result    |= ControlMask;
+        modifiers &= ~MOD_CONTROL;
+    }
+    if (modifiers & MOD_SHIFT)
+    {
+        result    |= ShiftMask;
+        modifiers &= ~MOD_SHIFT;
+    }
+    if (modifiers & MOD_WIN)
+    {
+        result    |= Mod4Mask;
+        modifiers &= ~MOD_WIN;
+    }
+    
+    return result;
 }
