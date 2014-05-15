@@ -5,8 +5,11 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifndef _PLAT_WNDS
 #include <X11/Xlib.h>
 #include "wnds_keydefs.h"
+#endif // not _PLAT_WNDS
 
 
 // #############################################################################
@@ -39,6 +42,7 @@ void hklog(const char* format, ...)
     va_end(arglist);
 }
 
+#ifndef _PLAT_WNDS
 // -----------------------------------------------------------------------------
 // Convert windows modifier keys to X11 keys
 // -----------------------------------------------------------------------------
@@ -69,3 +73,4 @@ unsigned int hkconvert(unsigned int modifiers)
     
     return result;
 }
+#endif // not _PLAT_WNDS

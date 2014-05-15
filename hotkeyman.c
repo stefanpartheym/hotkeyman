@@ -113,7 +113,7 @@ void hotkeymanager_process_hotkeys(HotkeyManager* hkman)
     while (GetMessage(&msg, NULL, 0, 0))
     {
         if (msg.message == WM_HOTKEY)
-            hotkeymanager_process_hotkeys_internal(hkman, msg.WParam);
+            hotkeymanager_process_hotkeys_internal(hkman, msg.wParam);
         
         // exit hotkeyman if quit flag is true
         if (hkman->quit_flag)

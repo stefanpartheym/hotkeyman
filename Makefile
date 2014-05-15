@@ -29,7 +29,7 @@ endif
 default: debug
 
 # debug
-debug: CFLAGS := -g -D DEBUG
+debug: CFLAGS := -g -D DEBUG $(CFLAGS)
 debug: build
 
 # release
