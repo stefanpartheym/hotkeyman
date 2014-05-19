@@ -282,6 +282,12 @@ bool hotkeymanager_refresh_hotkeys(HotkeyManager* hkman)
 bool hotkeymanager_read_hotkeys_form_file(HotkeyManager* hkman)
 {
     FILE* hk_file = fopen(hkman->config_file_name, "r");
+    if (hk_file == NULL)
+    {
+        hklog("ERROR: Unable to open file '%s'\n", hkman->config_file_name);
+        return false;
+    }
+    
     char* key     = malloc(sizeof(char) * 512);
     char* value   = malloc(sizeof(char) * 512);
     hklist* item  = hkman->hotkeys;
