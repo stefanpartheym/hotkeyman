@@ -1,5 +1,5 @@
 # hotkeyman
-Simple tool to manage your hotkeys under *Windows* and under *X11* based desktops like *GNU/Linux* and *Unix*.
+Simple tool to manage your hotkeys under *Windows* and under *X11* based desktops like *Gnome* or *KDE*.
 
 ## General Information
 hotkeyman -- short for "*Hotkey-Manager*"  
