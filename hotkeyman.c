@@ -14,7 +14,7 @@
 #include "hotkeyman.h"
 #include "hkutils.h"
 
-#define HK_CONF_FILENAME "hotkeyman.conf"
+#define HK_CONF_FILENAME "hotkeymanrc"
 
 
 // #############################################################################
@@ -25,7 +25,7 @@
 struct HotkeyManager
 {
     hklist* hotkeys;
-    const char* config_file_name;
+    char* config_file_name;
     int current_id;
     
 #ifndef _PLAT_WNDS
@@ -38,6 +38,8 @@ struct HotkeyManager
     int hk_id_refresh;
 };
 
+
+char* hotkeymanager_get_config_path(const char* file_name);
 #ifndef _PLAT_WNDS
 void hotkeymanager_handle_hotkey_cb(xhkEvent event, void* arg1, void* arg2,
                                     void* arg3);
@@ -55,7 +57,7 @@ HotkeyManager* hotkeymanager_create()
 {
     HotkeyManager* hkman    = (HotkeyManager*) malloc(sizeof(HotkeyManager));
     hkman->hotkeys          = hklist_create(1);
-    hkman->config_file_name = HK_CONF_FILENAME;
+    hkman->config_file_name = hotkeymanager_get_config_path(HK_CONF_FILENAME);
     hkman->current_id       = 0;
 #ifndef _PLAT_WNDS
     hkman->hkconfig         = xhkInit(NULL);
@@ -72,6 +74,7 @@ HotkeyManager* hotkeymanager_create()
 // -----------------------------------------------------------------------------
 void hotkeymanager_free(HotkeyManager* hkman)
 {
+    free(hkman->config_file_name);
 #ifndef _PLAT_WNDS
     xhkClose(hkman->hkconfig);
 #endif // not _PLAT_WNDS
@@ -354,6 +357,30 @@ bool hotkeymanager_read_hotkeys_form_file(HotkeyManager* hkman)
 // #############################################################################
 // Internal functions
 // #############################################################################
+
+// -----------------------------------------------------------------------------
+// Determine the configuration path
+// -----------------------------------------------------------------------------
+char* hotkeymanager_get_config_path(const char* file_name)
+{
+    char* result;
+    const char* home;
+    
+    home = getenv("HOME");
+    if (home)
+    {
+        int size = strlen(home) + strlen(file_name) + 3;
+        result   = malloc(size);
+        memset(result, 0, size);
+        strcpy(result, home);
+        strcat(result, "/.");
+        strcat(result, file_name);
+    }
+    else
+        result = strdup(file_name);
+    
+    return result;
+}
 
 #ifndef _PLAT_WNDS
 // -----------------------------------------------------------------------------
